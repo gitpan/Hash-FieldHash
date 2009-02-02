@@ -84,7 +84,10 @@ fieldhash_watch(pTHX_ IV const action, SV* const fieldhash){
 
 	if(!SvROK(mg->mg_obj)){ /* maybe it's an object address */
 		if(!UPDATING_ACTION(action)){
-			return 0; /* exists() and delete() allow any key */
+			if(!looks_like_number(mg->mg_obj)){
+				Perl_croak(aTHX_ "Invalid object \"%"SVf"\" as a fieldhash key", mg->mg_obj);
+			}
+			return 0;
 		}
 		else{
 			dMY_CXT;
@@ -144,7 +147,6 @@ fieldhash_watch(pTHX_ IV const action, SV* const fieldhash){
 
 		reg = (HV*)key_mg->mg_obj;
 		assert(SvTYPE(reg) == SVt_PVHV);
-
 	}
 
 	{
@@ -163,24 +165,31 @@ static int
 fieldhash_key_free(pTHX_ SV* const sv, MAGIC* const mg){
 	PERL_UNUSED_ARG(sv);
 
-	if(!PL_dirty){ /* not during global destruction */
+	/*
+		Do nothing during global destruction.
+		Some data may already be released.
+	*/
+	if(!PL_dirty){
 		HV* const reg    = (HV*)mg->mg_obj;
 		SV* const obj_id = (SV*)mg->mg_ptr;
 		HE* he;
 		dMY_CXT;
 
-		hv_delete_ent(OBJECT_REGISTRY, obj_id, G_DISCARD, 0U);
+		//warn("key_free(sv=%"UVuf", mg=%"UVuf")", PTR2UV(sv), PTR2UV(mg));
 
 		assert(SvTYPE(reg) == SVt_PVHV);
 		assert(SvOK(obj_id));
 
-		//warn("key_free(sv=%"UVuf", mg=%"UVuf")",
-		//	PTR2UV(sv), PTR2UV(mg));
+		hv_delete_ent(OBJECT_REGISTRY, obj_id, G_DISCARD, 0U);
+
 		hv_iterinit(reg);
 		while((he = hv_iternext(reg))){
 			HV* const fieldhash = (HV*)HeVAL(he);
-			hv_delete_ent(fieldhash, obj_id, G_DISCARD, 0U);
+
+			/* NOTE: G_DISCARD may cause a double-free problem (t/11_panic_malloc.t) */
+			hv_delete_ent(fieldhash, obj_id, 0, 0U); /* lazy destruction */
 		}
+
 	}
 
 	return 0;
@@ -295,8 +304,8 @@ CODE:
 		sv_magic((SV*)hash,
 			NULL,                      /* mg_obj */
 			PERL_MAGIC_uvar,           /* mg_type */
-			(char*)&fieldhash_ufuncs,  /* mg_ptr */
-			0                          /* mg_len (0 as static data) */
+			(char*)&fieldhash_ufuncs,  /* mg_ptr as the ufuncs table */
+			0                          /* mg_len (0 indicates static data) */
 		);
 	}
 

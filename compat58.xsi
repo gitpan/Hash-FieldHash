@@ -37,7 +37,7 @@ CODE:
 		Perl_croak(aTHX_ "Invalid fieldhash");
 	}
 	mg->mg_obj = key;
-	fieldhash_watch(aTHX_ ix, (SV*)self);
+	fieldhash_watch(aTHX_ ix /* as action */, (SV*)self);
 	key = mg->mg_obj;
 	mg->mg_obj = NULL;
 

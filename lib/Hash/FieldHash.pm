@@ -3,7 +3,7 @@ package Hash::FieldHash;
 use 5.008_001;
 use strict;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(fieldhash fieldhashes);
@@ -28,7 +28,7 @@ Hash::FieldHash - A lightweight fieldhash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.01.
+This document describes Hash::FieldHash version 0.02.
 
 =head1 SYNOPSIS
 
@@ -89,21 +89,22 @@ C<Hash::FieldHash> fully supports threading using the C<CLONE> method.
 
 =head2 Relic support
 
-Although C<Hash::FieldHash> uses new features introduced in Perl 5.10,
+Although C<Hash::FieldHash> uses a new feature introduced in Perl 5.10,
+I<the uvar magic for hashes> described in L<Hash::Util::Fieldhash/"GUTS">,
 it also supports Perl 5.8 using the traditional tie-hash interface.
 
 =head1 INCOMPATIBILITY
 
 C<Hash::FieldHash> accepts only references and registered addresses as its
-keys, while C<Hash::Util::FieldHash> accepts any scalars.
+keys, whereas C<Hash::Util::FieldHash> accepts any scalars.
 
 According to L<Hash::Util::FieldHash/"The Generic Object">,
 Non-reference keys in C<H::U::F> are used for class fields. That is,
 all the fields defined by C<H::U::F> act as both object fields and class fields
-by default. If you do not want a class field, you must check the type
+by default. If you do not want them to be class fields, you must check the type
 of I<$self> explicitly. In addition, these class fields are never inherited.
 This function of C<H::U::F> seems erroneous, so C<Hash::FieldHash>
-refuses non-reference keys.
+restricts the type of keys.
 
 =head1 DEPENDENCIES
 
@@ -119,7 +120,7 @@ Please report any bugs or feature requests to the author.
 
 L<Hash::Util::FieldHash>.
 
-L<perlguts>.
+L<perlguts/"Magic Virtual Tables">.
 
 =head1 AUTHOR
 

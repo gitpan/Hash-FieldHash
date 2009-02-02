@@ -1,4 +1,8 @@
 Revision history for Perl extension Hash::FieldHash
 
+0.02 Mon Feb  2 13:24:51 2009
+	- add some type checks
+	- fix a double-free problem (checked in t/11_panic_malloc.t)
+
 0.01 Wed Jan 28 10:09:03 2009
         - original version; created by Module::Setup

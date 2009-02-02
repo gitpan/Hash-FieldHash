@@ -1,6 +1,7 @@
 .shipit
 benchmark/fieldhash.pl
 benchmark/mouse.pl
+benchmark/threads.pl
 Changes
 compat58.h
 compat58.xsi
@@ -25,7 +26,9 @@ t/03_touch.t
 t/04_copy.t
 t/05_threads.t
 t/06_ensure_released.t
+t/07_local.t
 t/10_bad_use.t
+t/11_panic_malloc.t
 t/orig/02_function.t
 t/orig/03_class.t
 t/orig/04_thread.t
