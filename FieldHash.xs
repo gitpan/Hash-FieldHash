@@ -8,23 +8,48 @@
 #define PACKAGE "Hash::FieldHash"
 #define OBJECT_REGISTRY_KEY PACKAGE "::" "::OBJECT_REGISTRY"
 
+#define INVALID_OBJECT "Invalid object \"%"SVf"\" as a fieldhash key"
 
-/* the global object registry */
 #define MY_CXT_KEY PACKAGE "::_guts" XS_VERSION
 typedef struct {
-    HV* object_registry;
+    AV* object_registry; /* the global object registry */
+    I32 last_id;         /* the last allocated id */
+    AV* id_pool;         /* the released ids list */
 } my_cxt_t;
 START_MY_CXT
-#define OBJECT_REGISTRY (MY_CXT.object_registry)
+#define ObjectRegistry (MY_CXT.object_registry)
+#define LastId         (MY_CXT.last_id)
+#define IdPool         (MY_CXT.id_pool)
 
-MGVTBL fieldhash_key_vtbl;
+static I32 fieldhash_watch(pTHX_ IV const action, SV* const fieldhash);
+static const struct ufuncs fieldhash_ufuncs = {
+	fieldhash_watch, /* uf_val */
+	NULL,            /* uf_set */
+	0,               /* uf_index */
+};
+
+
+static int fieldhash_key_free(pTHX_ SV* const sv, MAGIC* const mg);
+static MGVTBL fieldhash_key_vtbl = {
+	NULL, /* get */
+	NULL, /* set */
+	NULL, /* len */
+	NULL, /* clear */
+	fieldhash_key_free,
+	NULL, /* copy */
+	NULL, /* dup */
+#ifdef MGf_LOCAL
+	NULL, /* local */
+#endif
+};
+
 #define fieldhash_key_mg(sv) my_mg_find_by_vtbl(aTHX_ sv, &fieldhash_key_vtbl)
-
 
 static MAGIC*
 my_mg_find_by_vtbl(pTHX_ SV* const sv, const MGVTBL* const vtbl){
 	MAGIC* mg;
 
+	assert(sv != NULL);
 	if(SvTYPE(sv) < SVt_PVMG) return NULL;
 
 	for(mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic){
@@ -35,21 +60,14 @@ my_mg_find_by_vtbl(pTHX_ SV* const sv, const MGVTBL* const vtbl){
 	return mg;
 }
 
-static I32
-fieldhash_watch(pTHX_ IV const action, SV* const fieldhash);
-struct ufuncs fieldhash_ufuncs = {
-	fieldhash_watch, /* uf_val */
-	NULL,            /* uf_set */
-	0,               /* uf_index */
-};
-
-#if PERL_VERSION >= 10 /* >= 5.10.0 */
+#if PERL_BCDVERSION >= 0x5010000 /* >= 5.10.0 */
 
 #define fieldhash_mg(sv) hf_fieldhash_mg(aTHX_ sv)
 static MAGIC*
 hf_fieldhash_mg(pTHX_ SV* const sv){
 	MAGIC* mg;
 
+	assert(sv != NULL);
 	for(mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic){
 		if(mg->mg_type == PERL_MAGIC_uvar
 			&& ((struct ufuncs*)(mg->mg_ptr)) == &fieldhash_ufuncs){
@@ -59,9 +77,24 @@ hf_fieldhash_mg(pTHX_ SV* const sv){
 	return mg;
 }
 
-#else /* PERL_VERSION < 5.10 */
+#else /* PERL_BCDVERSION < 0x5010000 (5.10.0) */
 #include "compat58.h"
 #endif
+
+
+static SV*
+fieldhash_av_find(pTHX_ AV* const av, SV* const sv){
+	SV** const ary = AvARRAY(av);
+	I32  const len = AvFILLp(av)+1;
+	I32 i;
+
+	for(i = 0; i < len; i++){
+		if(ary[i] == sv){
+			return sv;
+		}
+	}
+	return NULL;
+}
 
 /*
     defined actions (in 5.10.0) are:
@@ -71,91 +104,89 @@ hf_fieldhash_mg(pTHX_ SV* const sv){
        HV_FETCH_JUST_SV  = 0x20
        HV_DELETE         = 0x40
  */
-#define UPDATING_ACTION(a) (a & (HV_FETCH_ISSTORE | HV_FETCH_LVALUE))
+#define HF_CREATE_KEY(a) (a & (HV_FETCH_ISSTORE | HV_FETCH_LVALUE))
 
 static I32
 fieldhash_watch(pTHX_ IV const action, SV* const fieldhash){
 	MAGIC* const mg = fieldhash_mg(fieldhash);
+	SV* obj_ref;
+	SV* obj;
 	MAGIC* key_mg;
-	HV* reg;
-	SV* obj = NULL;
+	AV* reg;         /* field registry */
 
 	assert(mg != NULL);
 
-	if(!SvROK(mg->mg_obj)){ /* maybe it's an object address */
-		if(!UPDATING_ACTION(action)){
-			if(!looks_like_number(mg->mg_obj)){
-				Perl_croak(aTHX_ "Invalid object \"%"SVf"\" as a fieldhash key", mg->mg_obj);
-			}
+	obj_ref = mg->mg_obj;
+	if(!SvROK(obj_ref)){ /* it's ok if an object ID */
+		if(!looks_like_number(obj_ref)){ /* looks like an ID? */
+			Perl_croak(aTHX_ INVALID_OBJECT, obj_ref);
+		}
+
+		if(!HF_CREATE_KEY(action)){ /* fetch, exists, delete */
 			return 0;
 		}
-		else{
+		else{ /* store, lvalue fetch */
 			dMY_CXT;
-			HE* const he = hv_fetch_ent(OBJECT_REGISTRY, mg->mg_obj, 0, 0U);
+			SV** const svp = av_fetch(ObjectRegistry, SvIV(obj_ref), FALSE);
 
-			if(!he){
-				Perl_croak(aTHX_ "Invalid object \"%"SVf"\" as a fieldhash key", mg->mg_obj);
+			if(!svp){
+				Perl_croak(aTHX_ INVALID_OBJECT, obj_ref);
 			}
 
-			obj = SvRV( HeVAL(he) );
-			assert(SvREFCNT(obj) != 0);
+			obj_ref = *svp;
+			assert(SvROK(obj_ref));
 		}
 	}
-	else{
-		obj = SvRV(mg->mg_obj);
-	}
+
+	obj = SvRV(obj_ref);
+	assert(SvREFCNT(obj) != 0);
 
 	key_mg = fieldhash_key_mg(obj);
 	if(!key_mg){ /* first access */
-		SV* const obj_id = newSVpvf("%"UVuf, PTR2UV(obj));
-
-		mg->mg_obj = obj_id; /* key replacement */
-
-		if(!UPDATING_ACTION(action)){
-			sv_2mortal(obj_id);
+		if(!HF_CREATE_KEY(action)){ /* fetch, exists, delete */
+			mg->mg_obj = &PL_sv_no; /* anything that is not a registered ID */
 			return 0;
 		}
-
-		reg = newHV();
-
-		key_mg = sv_magicext(
-			obj,
-			(SV*)reg,
-			PERL_MAGIC_ext,
-			&fieldhash_key_vtbl,
-			(char*)obj_id,
-			HEf_SVKEY
-		);
-		SvREFCNT_dec(obj_id); /* refcnt++ in sv_magicext() */
-		SvREFCNT_dec(reg);    /* refcnt++ in sv_magicext() */
-
-		{
+		else{ /* store, lvalue fetch */
 			dMY_CXT;
-			SV* const ref = newRV_inc(obj);
-			sv_rvweaken(ref);
-			hv_store_ent(OBJECT_REGISTRY, obj_id, ref, 0U);
+			SV* const obj_id = AvFILLp(IdPool) >= 0 ? av_pop(IdPool) : newSViv(++LastId);
+			SV* const obj_weakref = sv_rvweaken(newRV_inc(obj));
+
+			assert(obj_id != NULL);
+			av_store(ObjectRegistry, SvIVX(obj_id), obj_weakref);
+
+			mg->mg_obj = obj_id; /* key replacement */
+
+			reg = newAV(); /* field registry for obj */
+
+			key_mg = sv_magicext(
+				obj,
+				(SV*)reg,
+				PERL_MAGIC_ext,
+				&fieldhash_key_vtbl,
+				(char*)obj_id,
+				HEf_SVKEY
+			);
+			SvREFCNT_dec(obj_id); /* refcnt++ in sv_magicext() */
+			SvREFCNT_dec(reg);    /* refcnt++ in sv_magicext() */
 		}
 	}
 	else{
 		/* key_mg->mg_ptr is obj_id */
+		assert(SvIOK((SV*)key_mg->mg_ptr));
 		mg->mg_obj = (SV*)key_mg->mg_ptr; /* key replacement */
-		assert(SvOK(mg->mg_obj));
 
-		if(!UPDATING_ACTION(action)){
+		if(!HF_CREATE_KEY(action)){
 			return 0;
 		}
 
-		reg = (HV*)key_mg->mg_obj;
-		assert(SvTYPE(reg) == SVt_PVHV);
+		reg = (AV*)key_mg->mg_obj;
+		assert(SvTYPE(reg) == SVt_PVAV);
 	}
 
-	{
-		UV const fieldhash_id = PTR2UV(fieldhash);
-
-		if(!hv_exists(reg, (const char*)&fieldhash_id, sizeof(fieldhash_id))){
-			hv_store(reg, (const char*)&fieldhash_id, sizeof(fieldhash_id), fieldhash, 0U);
-			SvREFCNT_inc_simple_void_NN(fieldhash);
-		}
+	/* add a new fieldhash to the field registry if needed */
+	if(!fieldhash_av_find(aTHX_ reg, (SV*)fieldhash)){
+		av_push(reg, (SV*)SvREFCNT_inc_simple_NN(fieldhash));
 	}
 
 	return 0;
@@ -166,109 +197,37 @@ fieldhash_key_free(pTHX_ SV* const sv, MAGIC* const mg){
 	PERL_UNUSED_ARG(sv);
 
 	/*
-		Do nothing during global destruction.
-		Some data may already be released.
+		Do nothing during global destruction, because
+		some data may already be released.
 	*/
 	if(!PL_dirty){
-		HV* const reg    = (HV*)mg->mg_obj;
-		SV* const obj_id = (SV*)mg->mg_ptr;
-		HE* he;
 		dMY_CXT;
+		AV* const reg    = (AV*)mg->mg_obj; /* field registry */
+		SV* const obj_id = (SV*)mg->mg_ptr;
+		I32 const len    = AvFILLp(reg)+1;
+		I32 i;
 
 		//warn("key_free(sv=%"UVuf", mg=%"UVuf")", PTR2UV(sv), PTR2UV(mg));
 
-		assert(SvTYPE(reg) == SVt_PVHV);
-		assert(SvOK(obj_id));
+		assert(SvTYPE(reg) == SVt_PVAV);
+		assert(SvIOK(obj_id));
 
-		hv_delete_ent(OBJECT_REGISTRY, obj_id, G_DISCARD, 0U);
+		av_push(IdPool, SvREFCNT_inc_simple_NN(obj_id));
+		av_delete(ObjectRegistry, SvIVX(obj_id), G_DISCARD);
 
-		hv_iterinit(reg);
-		while((he = hv_iternext(reg))){
-			HV* const fieldhash = (HV*)HeVAL(he);
+		/* delete $fieldhash{$obj} for each fieldhash */
+		for(i = 0; i < len; i++){
+			HV* const fieldhash = (HV*)AvARRAY(reg)[i];
 
-			/* NOTE: G_DISCARD may cause a double-free problem (t/11_panic_malloc.t) */
-			hv_delete_ent(fieldhash, obj_id, 0, 0U); /* lazy destruction */
+			/* NOTE: Don't use G_DISCARD, because it may cause
+			         a double-free problem (t/11_panic_malloc.t).
+			*/
+			hv_delete_ent(fieldhash, obj_id, 0, 0U);
 		}
-
 	}
 
 	return 0;
 }
-
-#ifdef USE_ITHREADS
-/* fieldhash cloning in creating threads */
-static void
-fieldhash_clone(pTHX){
-	HV* const old_object_registry = get_hv(OBJECT_REGISTRY_KEY, GV_ADDMULTI);
-	HV* const new_object_registry = newHV();
-	HE* he;
-	MY_CXT_CLONE;
-
-	OBJECT_REGISTRY = new_object_registry;
-
-	hv_iterinit(old_object_registry);
-	/* for each object */
-	while((he = hv_iternext(old_object_registry))){
-		SV* const obj_ref = HeVAL(he);
-		SV* const obj     = SvRV(obj_ref);
-		HV* new_reg;
-		SV* new_id;
-		MAGIC* key_mg;
-		HV* old_reg;
-		SV* old_id;
-		HE* he;
-
-		assert(obj != NULL);
-
-		key_mg  = fieldhash_key_mg(obj);
-		assert(key_mg);
-
-		old_reg = (HV*)key_mg->mg_obj;
-		old_id  = (SV*)key_mg->mg_ptr;
-
-		new_reg = newHV();
-		new_id  = newSVpvf("%"UVuf, PTR2UV(obj));
-
-		key_mg->mg_obj = (SV*)new_reg;
-		key_mg->mg_ptr = (char*)new_id;
-
-		hv_store_ent(new_object_registry, new_id, obj_ref, 0U);
-		SvREFCNT_inc_simple_void_NN(obj_ref);
-
-		assert(SvTYPE(old_reg) == SVt_PVHV);
-		hv_iterinit(old_reg);
-		/* for each fieldhash */
-		while((he = hv_iternext(old_reg))){
-			HV* const fieldhash    = (HV*)HeVAL(he);
-			UV  const fieldhash_id = PTR2UV(fieldhash);
-			SV* sv;
-
-			assert(SvTYPE(fieldhash) == SVt_PVHV);
-			hv_store(new_reg, (const char*)&fieldhash_id, sizeof(fieldhash_id),
-				(SV*)fieldhash, 0U);
-			SvREFCNT_inc_simple_void_NN(fieldhash);
-
-			if((sv = hv_delete_ent(fieldhash, old_id, 0, 0U))){
-				hv_store_ent(fieldhash, new_id, sv, 0U);
-				SvREFCNT_inc_simple_void_NN(sv);
-			}
-		}
-
-		SvREFCNT_dec(old_reg);
-		SvREFCNT_dec(old_id);
-	}
-
-	/*
-		*OBJECT_REGISTRY_KEY = \%new_object_registry;
-	*/
-	sv_setsv_mg(
-		(SV*)gv_fetchpvs(OBJECT_REGISTRY_KEY, GV_ADD, SVt_PVHV),
-		sv_2mortal(newRV_noinc((SV*)new_object_registry))
-	);
-}
-#endif /* !USE_ITHREADS */
-
-
 
 MODULE = Hash::FieldHash	PACKAGE = Hash::FieldHash
 
@@ -277,8 +236,9 @@ PROTOTYPES: DISABLE
 BOOT:
 {
 	MY_CXT_INIT;
-	OBJECT_REGISTRY = get_hv(OBJECT_REGISTRY_KEY, GV_ADDMULTI);
-	fieldhash_key_vtbl.svt_free = fieldhash_key_free;
+	ObjectRegistry = get_av(OBJECT_REGISTRY_KEY, GV_ADDMULTI);
+	LastId         = 0;
+	IdPool         = newAV();
 }
 
 #ifdef USE_ITHREADS
@@ -287,13 +247,15 @@ void
 CLONE(const char* klass)
 CODE:
 	if(strEQ(klass, PACKAGE)){
-		fieldhash_clone(aTHX);
+		MY_CXT_CLONE;
+
+		ObjectRegistry = get_av(OBJECT_REGISTRY_KEY, GV_ADDMULTI);
+		IdPool         = av_make(AvFILLp(IdPool)+1, AvARRAY(IdPool));
 	}
 
 #endif
 
-
-#if PERL_VERSION >= 10
+#if PERL_BCDVERSION >= 0x5010000
 
 void
 fieldhash(HV* hash)
@@ -302,10 +264,10 @@ CODE:
 	if(!fieldhash_mg((SV*)hash)){
 		hv_clear(hash);
 		sv_magic((SV*)hash,
-			NULL,                      /* mg_obj */
-			PERL_MAGIC_uvar,           /* mg_type */
-			(char*)&fieldhash_ufuncs,  /* mg_ptr as the ufuncs table */
-			0                          /* mg_len (0 indicates static data) */
+			NULL,                           /* mg_obj */
+			PERL_MAGIC_uvar,                /* mg_type */
+			(const char*)&fieldhash_ufuncs, /* mg_ptr as the ufuncs table */
+			0                               /* mg_len (0 indicates static data) */
 		);
 	}
 
@@ -314,4 +276,3 @@ CODE:
 INCLUDE: compat58.xsi
 
 #endif
-

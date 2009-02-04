@@ -2,7 +2,6 @@
 
 use strict;
 use Test::More tests => 10;
-use Scalar::Util qw(refaddr);
 
 use Hash::FieldHash qw(:all);
 
@@ -22,6 +21,7 @@ is_deeply \%hash, {};
 my $dummy = $hash{$r};
 is_deeply \%hash, {};
 
-ok !delete $hash{refaddr $r};
-ok !exists $hash{refaddr $r};
-ok !$hash{refaddr $r};
+ok !delete $hash{1};
+ok !exists $hash{1};
+ok !$hash{1};
+

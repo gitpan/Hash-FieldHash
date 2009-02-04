@@ -1,16 +1,26 @@
 #!perl -w
 
 use strict;
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 #use Hash::Util::FieldHash::Compat qw(fieldhash fieldhashes);
 use Hash::FieldHash qw(:all);
-use Scalar::Util qw(refaddr);
 
 fieldhash my %hash;
 
 eval{
 	$hash{foo}++;
+};
+ok $@;
+
+eval{
+	$hash{1}++;
+};
+ok $@;
+
+eval{
+	my $o = {};
+	$hash{"$o"}++;
 };
 ok $@;
 

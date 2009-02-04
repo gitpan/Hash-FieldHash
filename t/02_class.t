@@ -4,7 +4,6 @@ use strict;
 use Test::More tests => 10;
 
 use Hash::FieldHash qw(:all);
-use Scalar::Util qw(refaddr);
 
 BEGIN{
 	package InsideOut;

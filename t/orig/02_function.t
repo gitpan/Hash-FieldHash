@@ -3,8 +3,7 @@
 # This test originally comes from the Hash-Util-FieldHash distribution
 
 use strict;
-use Test::More tests => 42;
-use Scalar::Util qw(refaddr);
+use Test::More tests => 41;
 
 use Hash::FieldHash qw(:all);
 
@@ -41,9 +40,6 @@ BEGIN {
     my $key = [];
     $f{ $key} = $val;
     is( $f{ $key}, $val, "plain key set in field");
-    my ( $id) = keys %f;
-    my $refaddr = refaddr($key);
-    is $id, $refaddr, "key is refaddr";
     bless $key;
     is( $f{ $key}, $val, "access through blessed");
     $key = [];

@@ -6,7 +6,7 @@ use Test::More;
 
 BEGIN{
 	if(HAS_THREADS){
-		plan tests => 11;
+		plan tests => 14;
 	}
 	else{
 		plan skip_all => 'require threads';
@@ -16,7 +16,6 @@ BEGIN{
 use threads;
 
 use Hash::FieldHash qw(:all);
-use Scalar::Util qw(refaddr);
 
 fieldhashes \my(%a, %b);
 
@@ -35,25 +34,42 @@ fieldhashes \my(%a, %b);
 		is $b{$x}, 'b-x';
 		is $b{$y}, 'b-y';
 
-		async{
+		my $thr = async{
 			is $a{$x}, 'a-x';
 			$a{$x} = 3.14;
+
+			threads->yield();
 			is $a{$x}, 3.14;
-		}->join();
+		};
 
 		is $a{$x}, 'a-x';
 
 		my $z = {};
+
+		threads->yield();
+
+		is $a{$x}, 'a-x';
+
 		$a{$z} = 42;
 		is $a{$z}, 42;
+
+		$thr->join();
 	};
 
-	is_deeply \%a, {
-		refaddr($x) => 'a-x',
-		refaddr($y) => 'a-y',
-	};
+	is_deeply [sort values %a], [sort 'a-x', 'a-y'];
+
+	threads->yield();
+
+	{
+		my $z = {};
+		$a{$z} = 'a-z';
+
+		is_deeply [sort values %a], [sort 'a-x', 'a-y', 'a-z'];
+	}
 
 	$thr->join;
+
+	is_deeply [sort values %a], [sort 'a-x', 'a-y'];
 }
 
 is_deeply \%a, {};

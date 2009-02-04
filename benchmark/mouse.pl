@@ -22,19 +22,16 @@ BEGIN{
 	use Hash::FieldHash qw(:all);
 	fieldhashes \my(%foo, %bar, %baz);
 
-	sub new{ bless {}, shift }
+	sub new{ my $o; bless \$o, shift }
 
 	sub foo{
-		my $self = shift;
-		@_ ? ($foo{$self} = shift) : $foo{$self}
+		@_ > 1 ? ($foo{$_[0]} = $_[1]) : $foo{$_[0]}
 	}
 	sub bar{
-		my $self = shift;
-		@_ ? ($bar{$self} = shift) : $bar{$self}
+		@_ > 1 ? ($bar{$_[0]} = $_[1]) : $bar{$_[0]}
 	}
 	sub baz{
-		my $self = shift;
-		@_ ? ($baz{$self} = shift) : $baz{$self}
+		@_ > 1 ? ($baz{$_[0]} = $_[1]) : $baz{$_[0]}
 	}
 }
 BEGIN{
@@ -42,68 +39,49 @@ BEGIN{
 	use Hash::Util::FieldHash::Compat qw(:all);
 	fieldhashes \my(%foo, %bar, %baz);
 
-	sub new{ bless {}, shift }
+	sub new{ my $o; bless \$o, shift }
 
 	sub foo{
-		my $self = shift;
-		@_ ? ($foo{$self} = shift) : $foo{$self}
+		@_ > 1 ? ($foo{$_[0]} = $_[1]) : $foo{$_[0]}
 	}
 	sub bar{
-		my $self = shift;
-		@_ ? ($bar{$self} = shift) : $bar{$self}
+		@_ > 1 ? ($bar{$_[0]} = $_[1]) : $bar{$_[0]}
 	}
 	sub baz{
-		my $self = shift;
-		@_ ? ($baz{$self} = shift) : $baz{$self}
+		@_ > 1 ? ($baz{$_[0]} = $_[1]) : $baz{$_[0]}
 	}
 }
+printf "Perl %vd on $^O\n", $^V;
 
-print "new, and access(read:write 2:4)*100\n";
-cmpthese timethese -1 => {
-	'H::F' => sub{
-		my $o = HF->new();
-		for(1 .. 100){
-			$o->foo($_);
-			$o->bar($o->foo + $o->foo + $o->foo + $o->foo);
-		}
-	},
-	'H::U::F' => sub{
-		my $o = HUF->new();
-		for(1 .. 100){
-			$o->foo($_);
-			$o->bar($o->foo + $o->foo + $o->foo + $o->foo);
-		}
-	},
-	'Mouse' => sub{
-		my $o = M->new();
-		for(1 .. 100){
-			$o->foo($_);
-			$o->bar($o->foo + $o->foo + $o->foo + $o->foo);
-		}
-	},
-};
-
-my $hf  = HF->new();
-my $huf = HUF->new();
-my $m   = M->new();
-print "access(read:write 2:4)*100\n";
-cmpthese timethese -1 => {
-	'H::F' => sub{
-		for(1 .. 100){
-			$hf->foo($_);
-			$hf->bar($hf->foo + $hf->foo + $hf->foo + $hf->foo);
-		}
-	},
-	'H::U::F' => sub{
-		for(1 .. 100){
-			$huf->foo($_);
-			$huf->bar($huf->foo + $huf->foo + $huf->foo + $huf->foo);
-		}
-	},
-	'Mouse' => sub{
-		for(1 .. 100){
-			$m->foo($_);
-			$m->bar($m->foo + $m->foo + $m->foo + $m->foo);
-		}
-	},
-};
+foreach my $count(10, 100){
+	print "new, and access(read:write 11:3)*$count\n";
+	cmpthese timethese -1 => {
+		'H::F' => sub{
+			my $o = HF->new();
+			for(1 .. $count){
+				$o->foo($_);
+				$o->bar($o->foo + $o->foo + $o->foo + $o->foo + $o->foo);
+				$o->baz($o->bar + $o->bar + $o->bar + $o->bar + $o->bar);
+				$o->baz == ($_ * 5 * 5) or die $o->baz;
+			}
+		},
+		'H::U::F' => sub{
+			my $o = HUF->new();
+			for(1 .. $count){
+				$o->foo($_);
+				$o->bar($o->foo + $o->foo + $o->foo + $o->foo + $o->foo);
+				$o->baz($o->bar + $o->bar + $o->bar + $o->bar + $o->bar);
+				$o->baz == ($_ * 5 * 5) or die $o->baz;
+			}
+		},
+		'Mouse' => sub{
+			my $o = M->new();
+			for(1 .. $count){
+				$o->foo($_);
+				$o->bar($o->foo + $o->foo + $o->foo + $o->foo + $o->foo);
+				$o->baz($o->bar + $o->bar + $o->bar + $o->bar + $o->bar);
+				$o->baz == ($_ * 5 * 5) or die $o->baz;
+			}
+		},
+	};
+}

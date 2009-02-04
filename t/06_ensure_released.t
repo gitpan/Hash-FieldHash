@@ -5,7 +5,6 @@ use Test::More tests => 4;
 
 #use Hash::Util::FieldHash::Compat qw(fieldhash fieldhashes);
 use Hash::FieldHash qw(:all);
-use Scalar::Util qw(refaddr);
 
 my $count = 0;
 {

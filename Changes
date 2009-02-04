@@ -1,8 +1,12 @@
 Revision history for Perl extension Hash::FieldHash
 
-0.02 Mon Feb  2 13:24:51 2009
+0.03 Wed Feb  4 11:51:32 2009
+	- change an object id from refaddr to be an arbitrary natural number
+	- improve performance
+
+0.02 Mon Feb  2 12:48:16 2009
 	- add some type checks
 	- fix a double-free problem (checked in t/11_panic_malloc.t)
 
 0.01 Wed Jan 28 10:09:03 2009
-        - original version; created by Module::Setup
+	- original version; created by Module::Setup

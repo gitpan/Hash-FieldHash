@@ -13,7 +13,7 @@ CODE:
 		sv_bless(self, gv_stashpvs(PACKAGE, GV_ADD));
 
 		if(tied_mg) sv_unmagic((SV*)hash, PERL_MAGIC_tied);
-		sv_magic((SV*)hash, self, PERL_MAGIC_tied, NULL, 0);
+		sv_magic((SV*)hash, self, PERL_MAGIC_tied, NULL, 0); /* tie */
 		SvREFCNT_dec(self); /* refcnt++ in sv_magic() */
 
 		sv_magicext(SvRV((SV*)self), NULL, PERL_MAGIC_ext, &fieldhash_vtbl, NULL, 0);

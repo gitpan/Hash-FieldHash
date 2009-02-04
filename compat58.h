@@ -20,6 +20,6 @@
 #define PL_unitcheckav NULL
 #endif
 
-MGVTBL fieldhash_vtbl;
+static MGVTBL fieldhash_vtbl;
 #define fieldhash_mg(sv) my_mg_find_by_vtbl(aTHX_ sv, &fieldhash_vtbl)
 

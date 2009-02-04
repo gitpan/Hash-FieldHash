@@ -3,7 +3,7 @@ package Hash::FieldHash;
 use 5.008_001;
 use strict;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(fieldhash fieldhashes);
@@ -22,13 +22,15 @@ sub fieldhashes{
 1;
 __END__
 
+=for stopwords uvar CPAN
+
 =head1 NAME
 
-Hash::FieldHash - A lightweight fieldhash implementation
+Hash::FieldHash - A lightweight field hash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.02.
+This document describes Hash::FieldHash version 0.03.
 
 =head1 SYNOPSIS
 
@@ -53,13 +55,30 @@ This document describes Hash::FieldHash version 0.02.
 C<Hash::FieldHash> provides the field hash mechanism which supports
 the inside-out technique.
 
-You may know C<Hash::Util::FieldHash>. It's very useful module,
-but too complex to understand all the features and only available in 5.10.
-For pre-5.10, C<Hash::Util::FieldHash::Compat> may be available, but
+You may know C<Hash::Util::FieldHash>. It's a very useful module,
+but too complex to understand all the functions and only available in 5.10.
+For pre-5.10, C<H::U::FieldHash::Compat> is in CPAN, but
 it's too slow to use.
 
-This is compatible with C<H::U::F>, having simple interface
-and available in pre-5.10.
+This is an alternative to C<H::U::F> with new features:
+
+=over 4
+
+=item Simple interface
+
+C<Hash::FieldHash> provides a few functions:  C<fieldhash()> and C<fieldhashes()>.
+
+=item Availability in pre-5.10
+
+Although C<Hash::FieldHash> uses a new feature introduced in Perl 5.10,
+I<the uvar magic for hashes> described in L<Hash::Util::Fieldhash/"GUTS">,
+it also supports Perl 5.8 using the traditional tie-hash layer.
+
+=item High performance
+
+C<Hash::FieldHash> is faster than C<Hash::Util::FieldHash>.
+
+=back
 
 =head1 INTERFACE
 
@@ -75,7 +94,7 @@ Returns nothing.
 
 =item C<< fieldhashes(@hash_refs) >>
 
-Creates any number of field hashes. All the arguments must be hash references.
+Creates a number of field hashes. All the arguments must be hash references.
 
 Returns nothing.
 
@@ -85,15 +104,16 @@ Returns nothing.
 
 =head2 Thread support
 
-C<Hash::FieldHash> fully supports threading using the C<CLONE> method.
+As C<Hash::Util::FieldHash> does, C<Hash::FieldHash> fully supports threading
+using the C<CLONE> method.
 
 =head2 Relic support
 
-Although C<Hash::FieldHash> uses a new feature introduced in Perl 5.10,
-I<the uvar magic for hashes> described in L<Hash::Util::Fieldhash/"GUTS">,
-it also supports Perl 5.8 using the traditional tie-hash interface.
+Available in pre-5.10.
 
-=head1 INCOMPATIBILITY
+=head1 NOTES
+
+=head2 The type of field hash keys
 
 C<Hash::FieldHash> accepts only references and registered addresses as its
 keys, whereas C<Hash::Util::FieldHash> accepts any scalars.
@@ -105,6 +125,12 @@ by default. If you do not want them to be class fields, you must check the type
 of I<$self> explicitly. In addition, these class fields are never inherited.
 This function of C<H::U::F> seems erroneous, so C<Hash::FieldHash>
 restricts the type of keys.
+
+=head2 The ID of field hash keys
+
+While C<Hash::Util::FieldHash> uses C<refaddr> as the IDs of field
+hash keys, C<Hash::FieldHash> allocates arbitrary natural numbers as the
+IDs.
 
 =head1 DEPENDENCIES
 
@@ -119,6 +145,8 @@ Please report any bugs or feature requests to the author.
 =head1 SEE ALSO
 
 L<Hash::Util::FieldHash>.
+
+L<Hash::Util::FieldHash::Compat>.
 
 L<perlguts/"Magic Virtual Tables">.
 

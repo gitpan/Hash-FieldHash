@@ -25,6 +25,8 @@ print "Hash::FieldHash ", Hash::FieldHash->VERSION, "\n";
 fieldhash my %huf;
 Hash::FieldHash::fieldhash my %hf;
 
+my %hash;
+
 cmpthese timethese -1 => {
 	'H::U::F' => sub{
 		my $o = bless {};
