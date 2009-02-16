@@ -4,11 +4,11 @@
 /*
 ----------------------------------------------------------------------
 
-    ppport.h -- Perl/Pollution/Portability Version 3.14_05
+    ppport.h -- Perl/Pollution/Portability Version 3.16
 
     Automatically created by Devel::PPPort running under perl 5.010000.
 
-    Version 3.x, Copyright (c) 2004-2008, Marcus Holland-Moritz.
+    Version 3.x, Copyright (c) 2004-2009, Marcus Holland-Moritz.
 
     Version 2.x, Copyright (C) 2001, Paul Marquess.
 
@@ -23,8 +23,8 @@ SKIP
 if (@ARGV && $ARGV[0] eq '--unstrip') {
   eval { require Devel::PPPort };
   $@ and die "Cannot require Devel::PPPort, please install.\n";
-  if ($Devel::PPPort::VERSION < 3.1405) {
-    die "ppport.h was originally generated with Devel::PPPort 3.1405.\n"
+  if (eval $Devel::PPPort::VERSION < 3.16) {
+    die "ppport.h was originally generated with Devel::PPPort 3.16.\n"
       . "Your Devel::PPPort is only version $Devel::PPPort::VERSION.\n"
       . "Please install a newer version, or --unstrip will not work.\n";
   }
@@ -600,6 +600,9 @@ typedef NVTYPE NV;
 #ifndef SAVE_DEFSV
 #define SAVE_DEFSV SAVESPTR(GvSV(PL_defgv))
 #endif
+#ifndef DEFSV_set
+#define DEFSV_set(sv) (DEFSV = (sv))
+#endif
 #ifndef AvFILLp
 #define AvFILLp AvFILL
 #endif
@@ -904,6 +907,19 @@ extern yy_parser DPPP_(dummy_PL_parser);
 #endif
 #ifndef PERL_LOADMOD_IMPORT_OPS
 #define PERL_LOADMOD_IMPORT_OPS 0x4
+#endif
+#ifndef G_METHOD
+#define G_METHOD 64
+#ifdef call_sv
+#undef call_sv
+#endif
+#if (PERL_BCDVERSION < 0x5006000)
+#define call_sv(sv, flags) ((flags) & G_METHOD ? perl_call_method((char *) SvPV_nolen_const(sv), \
+(flags) & ~G_METHOD) : perl_call_sv(sv, flags))
+#else
+#define call_sv(sv, flags) ((flags) & G_METHOD ? Perl_call_method(aTHX_ (char *) SvPV_nolen_const(sv), \
+(flags) & ~G_METHOD) : Perl_call_sv(aTHX_ sv, flags))
+#endif
 #endif
 #ifndef eval_pv
 #if defined(NEED_eval_pv)

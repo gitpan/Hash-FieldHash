@@ -1,7 +1,7 @@
 #!perl -w
 
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 10;
 
 #use Hash::Util::FieldHash::Compat qw(fieldhash fieldhashes);
 use Hash::FieldHash qw(:all);
@@ -60,3 +60,8 @@ is_deeply $o, {foo => 'bar'};
 
 	is_deeply \%hash, {};
 }
+
+eval{
+	&fieldhash(\undef);
+};
+ok $@;

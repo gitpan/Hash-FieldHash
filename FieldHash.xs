@@ -21,13 +21,6 @@ START_MY_CXT
 #define LastId         (MY_CXT.last_id)
 #define IdPool         (MY_CXT.id_pool)
 
-static I32 fieldhash_watch(pTHX_ IV const action, SV* const fieldhash);
-static const struct ufuncs fieldhash_ufuncs = {
-	fieldhash_watch, /* uf_val */
-	NULL,            /* uf_set */
-	0,               /* uf_index */
-};
-
 
 static int fieldhash_key_free(pTHX_ SV* const sv, MAGIC* const mg);
 static MGVTBL fieldhash_key_vtbl = {
@@ -43,15 +36,13 @@ static MGVTBL fieldhash_key_vtbl = {
 #endif
 };
 
-#define fieldhash_key_mg(sv) my_mg_find_by_vtbl(aTHX_ sv, &fieldhash_key_vtbl)
+#define fieldhash_key_mg(sv) (SvTYPE(sv) >= SVt_PVMG ? my_mg_find_by_vtbl(aTHX_ sv, &fieldhash_key_vtbl) : NULL)
 
 static MAGIC*
 my_mg_find_by_vtbl(pTHX_ SV* const sv, const MGVTBL* const vtbl){
 	MAGIC* mg;
 
 	assert(sv != NULL);
-	if(SvTYPE(sv) < SVt_PVMG) return NULL;
-
 	for(mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic){
 		if(mg->mg_virtual == vtbl){
 			break;
@@ -62,6 +53,13 @@ my_mg_find_by_vtbl(pTHX_ SV* const sv, const MGVTBL* const vtbl){
 
 #if PERL_BCDVERSION >= 0x5010000 /* >= 5.10.0 */
 
+static I32 fieldhash_watch(pTHX_ IV const action, SV* const fieldhash);
+static struct ufuncs fieldhash_ufuncs = {
+	fieldhash_watch, /* uf_val */
+	NULL,            /* uf_set */
+	0,               /* uf_index */
+};
+
 #define fieldhash_mg(sv) hf_fieldhash_mg(aTHX_ sv)
 static MAGIC*
 hf_fieldhash_mg(pTHX_ SV* const sv){
@@ -69,8 +67,7 @@ hf_fieldhash_mg(pTHX_ SV* const sv){
 
 	assert(sv != NULL);
 	for(mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic){
-		if(mg->mg_type == PERL_MAGIC_uvar
-			&& ((struct ufuncs*)(mg->mg_ptr)) == &fieldhash_ufuncs){
+		if(((struct ufuncs*)(mg->mg_ptr)) == &fieldhash_ufuncs){
 			break;
 		}
 	}
@@ -153,6 +150,7 @@ fieldhash_watch(pTHX_ IV const action, SV* const fieldhash){
 			SV* const obj_weakref = sv_rvweaken(newRV_inc(obj));
 
 			assert(obj_id != NULL);
+			SvREADONLY_on(obj_weakref);
 			av_store(ObjectRegistry, SvIVX(obj_id), obj_weakref);
 
 			mg->mg_obj = obj_id; /* key replacement */
@@ -250,7 +248,7 @@ CODE:
 		MY_CXT_CLONE;
 
 		ObjectRegistry = get_av(OBJECT_REGISTRY_KEY, GV_ADDMULTI);
-		IdPool         = av_make(AvFILLp(IdPool)+1, AvARRAY(IdPool));
+		IdPool         = AvFILLp(IdPool) > -1 ? av_make(AvFILLp(IdPool)+1, AvARRAY(IdPool)) : newAV();
 	}
 
 #endif
@@ -261,8 +259,9 @@ void
 fieldhash(HV* hash)
 PROTOTYPE: \%
 CODE:
+	assert(SvTYPE(hash) >= SVt_PVMG);
 	if(!fieldhash_mg((SV*)hash)){
-		hv_clear(hash);
+		hv_clear(hash); /* because tie() clears the hash (5.8 compatilibity) */
 		sv_magic((SV*)hash,
 			NULL,                           /* mg_obj */
 			PERL_MAGIC_uvar,                /* mg_type */

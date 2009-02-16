@@ -17,8 +17,6 @@ fieldhashes \my(%foo, %bar);;
 
 	print "inside the scope:\n";
 	print Data::Dumper->Dump([\%foo, \%bar], [qw(*foo *bar)]);
-
-	print Data::Dumper->Dump([Hash::FieldHash::get_associated_fieldhashes $o]);
 }
 
 print "outside the scope:\n";

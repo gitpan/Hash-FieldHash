@@ -3,6 +3,7 @@
 use strict;
 use Test::More tests => 8;
 
+#use Hash::Util::FieldHash::Compat qw(:all);
 use Hash::FieldHash qw(:all);
 
 fieldhashes \my(%a, %b);
@@ -28,3 +29,4 @@ fieldhashes \my(%a, %b);
 
 is_deeply \%a, {};
 is_deeply \%b, {};
+

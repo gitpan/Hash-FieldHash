@@ -3,7 +3,7 @@ package Hash::FieldHash;
 use 5.008_001;
 use strict;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(fieldhash fieldhashes);
@@ -30,7 +30,7 @@ Hash::FieldHash - A lightweight field hash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.03.
+This document describes Hash::FieldHash version 0.04.
 
 =head1 SYNOPSIS
 

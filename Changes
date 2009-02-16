@@ -1,5 +1,8 @@
 Revision history for Perl extension Hash::FieldHash
 
+0.04
+	- 
+
 0.03 Wed Feb  4 11:51:32 2009
 	- change an object id from refaddr to be an arbitrary natural number
 	- improve performance
