@@ -12,15 +12,16 @@ CODE:
 
 		sv_bless(self, gv_stashpvs(PACKAGE, GV_ADD));
 
-		if(tied_mg) sv_unmagic((SV*)hash, PERL_MAGIC_tied);
+		if(tied_mg) sv_unmagic((SV*)hash, PERL_MAGIC_tied); /* untie */
+
 		sv_magic((SV*)hash, self, PERL_MAGIC_tied, NULL, 0); /* tie */
 		SvREFCNT_dec(self); /* refcnt++ in sv_magic() */
 
-		sv_magicext(SvRV((SV*)self), NULL, PERL_MAGIC_ext, &fieldhash_vtbl, NULL, 0);
+		sv_magicext(SvRV(self), NULL, PERL_MAGIC_ext, &fieldhash_vtbl, NULL, 0);
 	}
 
 SV*
-STORE(HV* self, SV* key, SV* val = &PL_sv_undef)
+FETCH(HV* self, SV* key, SV* val = &PL_sv_undef)
 ALIAS:
 	FETCH  = 0
 	STORE  = HV_FETCH_ISSTORE
@@ -28,13 +29,10 @@ ALIAS:
 	DELETE = HV_DELETE
 PREINIT:
 	MAGIC* mg;
-	HE* he;
-INIT:
-	RETVAL = NULL;
 CODE:
 	mg = fieldhash_mg((SV*)self);
 	if(!mg){
-		Perl_croak(aTHX_ "Invalid fieldhash");
+		Perl_croak(aTHX_ "panic: invalid fieldhash");
 	}
 	mg->mg_obj = key;
 	fieldhash_watch(aTHX_ ix /* as action */, (SV*)self);
@@ -44,12 +42,11 @@ CODE:
 	assert(key);
 
 	switch(ix){
-	default: /* FETCH */
-		he = hv_fetch_ent(self, key, 0, 0U);
-		if(he){
-			RETVAL = hv_iterval(self, he);
-		}
+	default:{ /* FETCH */
+		HE* const he = hv_fetch_ent(self, key, 0, 0U);
+		RETVAL = he ? HeVAL(he) : NULL;
 		break;
+	}
 
 	case HV_FETCH_ISSTORE:
 		hv_store_ent(self, key, newSVsv(val), 0U);
@@ -70,7 +67,7 @@ CODE:
 
 
 void
-FIRSTKEY(HV* self, SV* last_key = &PL_sv_undef)
+FIRSTKEY(HV* self, ...)
 ALIAS:
 	FIRSTKEY = 0
 	NEXTKEY  = 1

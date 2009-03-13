@@ -29,27 +29,30 @@ my %hash;
 
 cmpthese timethese -1 => {
 	'H::U::F' => sub{
-		my $o = bless {};
-		for(1 .. 10){
-			$huf{$o} = $_;
-			$huf{$o} = $huf{$o} + $huf{$o} + $huf{$o};
-			$huf{$o} == ($_*3) or die $huf{$o};
+		my @list;
+
+		for(1 .. 1000){
+			my $o = bless {};
+			$huf{$o}++;
+			push @list, $o;
 		}
 	},
 	'H::F' => sub{
-		my $o = bless {};
-		for(1 .. 10){
-			$hf{$o} = $_;
-			$hf{$o} = $hf{$o} + $hf{$o} + $hf{$o};
-			$hf{$o} == ($_*3) or die $hf{$o};
+		my @list;
+
+		for(1 .. 1000){
+			my $o = bless {};
+			$hf{$o}++;
+			push @list, $o;
 		}
 	},
 	'normal' => sub{
-		my $o = bless {};
-		for(1 .. 10){
-			$o->{value} = $_;
-			$o->{value} = $o->{value} + $o->{value} + $o->{value};
-			$o->{value} == ($_*3) or die $o->{value};
+		my @list;
+
+		for(1 .. 1000){
+			my $o = bless {};
+			$o->{value}++;
+			push @list, $o;
 		}
 	},
 	

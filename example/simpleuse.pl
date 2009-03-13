@@ -17,6 +17,9 @@ fieldhashes \my(%foo, %bar);;
 
 	print "inside the scope:\n";
 	print Data::Dumper->Dump([\%foo, \%bar], [qw(*foo *bar)]);
+
+	#my $y = $o;
+	#use Devel::Peek; Dump $y;
 }
 
 print "outside the scope:\n";

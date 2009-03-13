@@ -30,9 +30,8 @@ fieldhash my %a;
 
 	is $count, 0, 'key object is released';
 
-	$o = {};
+	$o = CountedObject->new;
 	$a{$o} = CountedObject->new;
-	
 }
 
 is_deeply \%a, {};

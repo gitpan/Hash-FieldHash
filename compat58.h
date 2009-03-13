@@ -8,6 +8,16 @@
 #define HV_DELETE         0x40
 #endif
 
+#ifndef newSV_type
+#define newSV_type(t) my_newSV_type(aTHX_ t)
+static SV*
+my_newSV_type(pTHX_ svtype const t){
+	SV* const sv = newSV(0);
+	sv_upgrade(sv, t);
+	return sv;
+}
+#endif
+
 #ifndef gv_fetchpvs
 #define gv_fetchpvs(name, flags, svt) gv_fetchpv((name ""), flags, svt)
 #endif
@@ -21,5 +31,5 @@
 #endif
 
 static MGVTBL fieldhash_vtbl;
-#define fieldhash_mg(sv) my_mg_find_by_vtbl(aTHX_ sv, &fieldhash_vtbl)
+#define fieldhash_mg(sv) mg_find_by_vtbl(sv, &fieldhash_vtbl)
 

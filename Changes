@@ -1,7 +1,14 @@
 Revision history for Perl extension Hash::FieldHash
 
-0.04
-	- 
+0.05 Fri Mar 13 11:29:16 2009
+	- performance improvement
+	- now IDs are zero origin
+	- internal cleanup
+	- use Test::LeakTrace for testing
+
+0.04 Mon Feb 16 12:29:09 2009
+	- fix issues on bleadperl (5.11)
+	- update ppport.h
 
 0.03 Wed Feb  4 11:51:32 2009
 	- change an object id from refaddr to be an arbitrary natural number

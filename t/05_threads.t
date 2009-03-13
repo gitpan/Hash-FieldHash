@@ -35,7 +35,7 @@ for(1 .. 3){
 			is $b{$x}, 'b-x';
 			is $b{$y}, 'b-y';
 
-			my $thr = async{
+			my $thr1 = async{
 				is $a{$x}, 'a-x';
 
 				threads->yield();
@@ -44,6 +44,21 @@ for(1 .. 3){
 				threads->yield();
 				is $a{$x}, 3.14;
 			};
+
+			my $thr2 = async{
+				fieldhash my %c;
+				my $z = [];
+
+				$c{$x} = $a{$x};
+				$c{$z} = 'c-z';
+
+				$a{$x}++;
+				$b{$x}++;
+
+				is_deeply [sort values %c], [sort qw(a-x c-z)];
+			};
+
+			threads->yield();
 
 			is $a{$x}, 'a-x';
 
@@ -56,21 +71,14 @@ for(1 .. 3){
 			$a{$z} = 42;
 			is $a{$z}, 42;
 
-			$thr->join();
+			$thr1->join();
+			$thr2->join();
 		};
 
 		ok $thr, sprintf 'count=%d, tid=%d', $_, $thr->tid;
+		$thr->yield;
 
 		is_deeply [sort values %a], [sort 'a-x', 'a-y'];
-
-		threads->yield();
-
-		{
-			my $z = {};
-			$a{$z} = 'a-z';
-
-			is_deeply [sort values %a], [sort 'a-x', 'a-y', 'a-z'];
-		}
 
 		$thr->join;
 
