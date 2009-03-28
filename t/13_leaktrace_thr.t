@@ -16,15 +16,25 @@ BEGIN{
 }
 use Hash::FieldHash qw(:all);
 
+
+{
+	package A;
+
+	sub new{
+		bless [], shift;
+	}
+}
+
+
 fieldhash my %hash;
 
 leaks_cmp_ok{
 	# NOTE: weaken({}) leaks an AV in 5.10.0, so I use [] in here.
-	my $x = bless ['A'];
-	my $y = ['B'];
+	my $x = A->new();
+	my $y = A->new();
 
 	$hash{$x} = 'Hello';
-	$hash{$y} = 0.5;
+	$hash{$y} = 42;
 	$hash{$y}++ for 1 .. 10;
 
 	async{

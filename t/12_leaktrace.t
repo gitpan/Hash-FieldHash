@@ -2,17 +2,29 @@
 
 use strict;
 
-use constant HAS_LEAKTRACE => eval q{use Test::LeakTrace 0.06; 1};
-use Test::More HAS_LEAKTRACE ? (tests => 3) : (skip_all => 'require Test::LeakTrace');
+use constant HAS_LEAKTRACE => eval q{use Test::LeakTrace 0.07; 1};
+use Test::More HAS_LEAKTRACE ? (tests => 5) : (skip_all => 'require Test::LeakTrace');
 
 use Hash::FieldHash qw(:all);
 
-fieldhash my %hash;
+my %hash;
+{
+	package A;
+	use Hash::FieldHash qw(:all);
+
+	fieldhash %hash, 'foo';
+
+	sub new{
+		my $class = shift;
+		my $obj = bless do{ \my $o }, $class;
+		return Hash::FieldHash::from_hash($obj, {@_});
+	}
+}
+
 
 no_leaks_ok{
-	# NOTE: weaken({}) leaks an AV in 5.10.0, so I use [] in here.
-	my $x = bless ['A'];
-	my $y = ['B'];
+	my $x = A->new();
+	my $y = A->new();
 
 	$hash{$x} = 'Hello';
 	$hash{$y} = 0.5;
@@ -20,6 +32,16 @@ no_leaks_ok{
 };
 
 is_deeply \%hash, {};
+
+no_leaks_ok{
+	my $x = A->new(foo => 10);
+	my $y = A->new(foo => 100);
+
+	$x->foo($x->foo+1);
+	$y->foo($y->foo+1);
+};
+is_deeply \%hash, {};
+
 
 no_leaks_ok{
 	fieldhash my %h;

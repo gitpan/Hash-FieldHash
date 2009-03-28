@@ -3,12 +3,11 @@ package Hash::FieldHash;
 use 5.008_001;
 use strict;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use Exporter qw(import);
-our @EXPORT_OK = qw(fieldhash fieldhashes);
+our @EXPORT_OK   = qw(fieldhash fieldhashes);
 our %EXPORT_TAGS = (all => \@EXPORT_OK);
-
 
 use XSLoader;
 XSLoader::load(__PACKAGE__, $VERSION);
@@ -30,7 +29,7 @@ Hash::FieldHash - A lightweight field hash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.05.
+This document describes Hash::FieldHash version 0.06.
 
 =head1 SYNOPSIS
 
@@ -47,8 +46,8 @@ This document describes Hash::FieldHash version 0.05.
 
 		print $foo{$o}; # => 42
 	}
-
-	# now %foo is empty because $o is released
+	# when $o is released, $foo{$o} is also deleted,
+	# so %foo is empty in here.
 
 =head1 DESCRIPTION
 
@@ -87,9 +86,12 @@ it supports Perl 5.8 using the traditional tie-hash layer.
 
 =over 4
 
-=item C<< fieldhash(%hash) >>
+=item C<< fieldhash(%hash, ?$name, ?$package) >>
 
-Creates a field hash. The argument must be a hash.
+Creates a field hash. The first argument must be a hash.
+
+Optional I<$name> and I<$package> indicate the name of the field, which will
+create rw-accessors, using the same name as I<$name>.
 
 Returns nothing.
 
@@ -98,6 +100,22 @@ Returns nothing.
 Creates a number of field hashes. All the arguments must be hash references.
 
 Returns nothing.
+
+=back
+
+=head2 Non-exportable functions
+
+=over 4
+
+=item C<< Hash::FieldHash::from_hash($object, \%fields) >>
+
+Fills the named fields associated with I<$object> with I<%fields>.
+
+Returns I<$object>.
+
+=item C<< Hash::FieldHash::to_hash($object) >>
+
+Serializes I<$object> into a hash reference.
 
 =back
 

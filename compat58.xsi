@@ -1,7 +1,7 @@
 
 void
-fieldhash(HV* hash)
-PROTOTYPE: \%
+fieldhash(HV* hash, SV* name = NULL, SV* package = NULL)
+PROTOTYPE: \%;$
 PREINIT:
 	MAGIC* tied_mg;
 CODE:
@@ -18,28 +18,19 @@ CODE:
 		SvREFCNT_dec(self); /* refcnt++ in sv_magic() */
 
 		sv_magicext(SvRV(self), NULL, PERL_MAGIC_ext, &fieldhash_vtbl, NULL, 0);
+
+		hf_add_field(aTHX_ hash, name, package);
 	}
 
 SV*
 FETCH(HV* self, SV* key, SV* val = &PL_sv_undef)
 ALIAS:
-	FETCH  = 0
+	FETCH  = HV_FETCH
 	STORE  = HV_FETCH_ISSTORE
 	EXISTS = HV_FETCH_ISEXISTS
 	DELETE = HV_DELETE
-PREINIT:
-	MAGIC* mg;
 CODE:
-	mg = fieldhash_mg((SV*)self);
-	if(!mg){
-		Perl_croak(aTHX_ "panic: invalid fieldhash");
-	}
-	mg->mg_obj = key;
-	fieldhash_watch(aTHX_ ix /* as action */, (SV*)self);
-	key = mg->mg_obj;
-	mg->mg_obj = NULL;
-
-	assert(key);
+	key = hf_replace_key(aTHX_ self, key, ix /* action */);
 
 	switch(ix){
 	default:{ /* FETCH */
@@ -49,7 +40,7 @@ CODE:
 	}
 
 	case HV_FETCH_ISSTORE:
-		hv_store_ent(self, key, newSVsv(val), 0U);
+		(void)hv_store_ent(self, key, newSVsv(val), 0U);
 		RETVAL = val;
 		break;
 

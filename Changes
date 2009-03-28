@@ -1,5 +1,12 @@
 Revision history for Perl extension Hash::FieldHash
 
+0.06 Sat Mar 28 12:30:51 2009
+	- support for named fields
+		- add fieldhash(my %foo => 'foo') syntax as an accessor generator
+		- add Hash::FieldHash::from_hash($obj, \%params) function
+		- add Hash::FieldHash::to_hash($obj) function
+	- fix some bugs
+
 0.05 Fri Mar 13 11:29:16 2009
 	- performance improvement
 	- now IDs are zero origin

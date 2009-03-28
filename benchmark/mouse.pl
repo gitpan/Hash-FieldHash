@@ -20,19 +20,17 @@ BEGIN{
 BEGIN{
 	package HF;
 	use Hash::FieldHash qw(:all);
-	fieldhashes \my(%foo, %bar, %baz);
 
+	fieldhash my %foo => 'foo';
+	fieldhash my %bar => 'bar';
+	fieldhash my %baz => 'baz';
 	sub new{ my $o; bless \$o, shift }
 
-	sub foo{
-		@_ > 1 ? ($foo{$_[0]} = $_[1]) : $foo{$_[0]}
-	}
-	sub bar{
-		@_ > 1 ? ($bar{$_[0]} = $_[1]) : $bar{$_[0]}
-	}
-	sub baz{
-		@_ > 1 ? ($baz{$_[0]} = $_[1]) : $baz{$_[0]}
-	}
+#	sub new{
+#		my $class = shift;
+#		my $self  = bless do{ \my $o }, $class;
+#		return Hash::FieldHash::from_hash($self, @_);
+#	}
 }
 BEGIN{
 	package HUF;
@@ -53,7 +51,7 @@ BEGIN{
 }
 printf "Perl %vd on $^O\n", $^V;
 
-foreach my $count(10, 100){
+foreach my $count(1, 100){
 	print "new, and access(read:write 11:3)*$count\n";
 	cmpthese timethese -1 => {
 		'H::F' => sub{
