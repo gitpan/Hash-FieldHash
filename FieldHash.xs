@@ -271,8 +271,8 @@ fieldhash_key_free(pTHX_ SV* const sv, MAGIC* const mg){
 
 MGVTBL hf_accessor_vtbl;
 
-XS(XS_Hash__FieldHash_accessr_template);
-XS(XS_Hash__FieldHash_accessr_template){
+XS(XS_Hash__FieldHash_accessor);
+XS(XS_Hash__FieldHash_accessor){
 	dVAR; dXSARGS;
 	SV* const obj_ref   = ST(0);
 	MAGIC* const mg     = mg_find_by_vtbl((SV*)cv, &hf_accessor_vtbl);
@@ -345,12 +345,13 @@ hf_get_named_fields(pTHX_ HV* const stash, const char** const pkg_ptr, I32* cons
 static void
 hf_add_field(pTHX_ HV* const fieldhash, SV* const name, SV* const package){
 	if(name){
+		dMY_CXT;
 		HV* const stash = package ? gv_stashsv(package, TRUE) : CopSTASH(PL_curcop);
 		I32         pkglen;
 		const char* pkg;
 		HV* const fields = hf_get_named_fields(aTHX_ stash, &pkg, &pkglen);
 		STRLEN namelen;
-		char*  namepv = SvPV(name, namelen);
+		const char* namepv = SvPV_const(name, namelen);
 		CV* xsub;
 
 		if(hv_exists_ent(fields, name, 0U) && ckWARN(WARN_REDEFINE)){
@@ -363,7 +364,7 @@ hf_add_field(pTHX_ HV* const fieldhash, SV* const name, SV* const package){
 		namelen += sizeof("::")-1 + pkglen;
 		(void)hv_store(fields, namepv, namelen, newRV_inc((SV*)fieldhash), 0U);
 
-		xsub = newXS( namepv, XS_Hash__FieldHash_accessr_template, __FILE__);
+		xsub = newXS( (char*)namepv, XS_Hash__FieldHash_accessor, __FILE__);
 		sv_magicext(
 			(SV*)xsub,
 			(SV*)fieldhash,
@@ -372,11 +373,9 @@ hf_add_field(pTHX_ HV* const fieldhash, SV* const name, SV* const package){
 			NULL,
 			0
 		);
+		CvMETHOD_on(xsub);
 
-		{
-			dMY_CXT;
-			NameRegistryIsStale = TRUE;
-		}
+		NameRegistryIsStale = TRUE;
 	}
 }
 
@@ -462,19 +461,20 @@ PREINIT:
 	const char* stashname;
 	HV*   stash;
 	HV*   fields;
-	char* key;
-	I32   keylen;
-	SV*   val;
 INIT:
-	if(!(SvROK(object) && (stash = SvSTASH(SvRV(object))) )){
+	if(!sv_isobject(object)){
 		Perl_croak(aTHX_ "The %s() method must be called as an instance method", GvNAME(CvGV(cv)));
 	}
 CODE:
+	stash  = SvSTASH(SvRV(object));
 	fields = hf_get_named_fields(aTHX_ stash, &stashname, NULL);
 
 	if(items == 2){
 		SV* const arg = ST(1);
 		HV* hv;
+		char* key;
+		I32   keylen;
+		SV*   val;
 
 		if(!(SvROK(arg) && SvTYPE(SvRV(arg)) == SVt_PVHV)){
 			Perl_croak(aTHX_ "Single parameters to %s() must be a HASH reference", GvNAME(CvGV(cv)));
@@ -503,7 +503,7 @@ CODE:
 			HE* const he = hv_fetch_ent(fields, ST(i), FALSE, 0U);
 
 			if(!(he && SvROK(HeVAL(he)))){
-				Perl_croak(aTHX_ "No such field \"%s\" for %s", SvPV_nolen_const(ST(1)), stashname);
+				Perl_croak(aTHX_ "No such field \"%s\" for %s", SvPV_nolen_const(ST(i)), stashname);
 			}
 
 			fieldhash_store(aTHX_ (HV*)SvRV(HeVAL(he)), object, newSVsv(ST(i+1)));
@@ -512,25 +512,39 @@ CODE:
 	XSRETURN(1); /* returns the first argument */
 
 HV*
-to_hash(SV* object, bool fully_qualify = FALSE)
+to_hash(SV* object, ...)
 PREINIT:
 	HV*   stash;
 	HV*   fields;
 	char* key;
 	I32   keylen;
 	SV*   val;
+	bool  fully_qualify = FALSE;
 INIT:
-	if(!(SvROK(object) && (stash = SvSTASH(SvRV(object))))){
+	if(!sv_isobject(object)){
 		Perl_croak(aTHX_ "The %s() method must be called as an instance method", GvNAME(CvGV(cv)));
 	}
+	while(items > 1){
+		SV* const option = ST(--items);
+
+		if(SvOK(option)){
+			if(strEQ(SvPV_nolen_const(option), "-fully_qualify")){
+				fully_qualify = TRUE;
+			}
+			else{
+				Perl_croak(aTHX_ "Unknown option \"%"SVf"\"", option);
+			}
+		}
+	}
 CODE:
+	stash = SvSTASH(SvRV(object));
 	fields = hf_get_named_fields(aTHX_ stash, NULL, NULL);
 	RETVAL = newHV();
 
 	hv_iterinit(fields);
 	while((val = hv_iternextsv(fields, &key, &keylen))){
-		bool const is_fq_name = strchr(key, ':') ? TRUE : FALSE;
-		if( SvROK(val) && (is_fq_name ? fully_qualify : !fully_qualify) ){
+		bool const need_to_store = strchr(key, ':') ? fully_qualify : !fully_qualify;
+		if( need_to_store && SvROK(val) ){
 			HV* const fieldhash = (HV*)SvRV(val);
 			SV* const value     = fieldhash_fetch(aTHX_ fieldhash, object);
 			(void)hv_store(RETVAL, key, keylen, newSVsv(value), 0U);

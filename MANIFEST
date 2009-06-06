@@ -5,6 +5,7 @@ benchmark/threads.pl
 Changes
 compat58.h
 compat58.xsi
+example/namedfields.pl
 example/simpleuse.pl
 FieldHash.xs
 inc/Module/Install.pm
@@ -45,4 +46,4 @@ t/orig/04_thread.t
 xt/01_podspell.t
 xt/02_pod.t
 xt/03_pod-coverage.t
-xt/04_synopsis_syntax.t
+xt/04_synopsis.t

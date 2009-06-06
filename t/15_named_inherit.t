@@ -27,7 +27,8 @@ BEGIN{
 	}
 
 	sub dump{
-		goto &Hash::FieldHash::to_hash;
+		my($self, $fully_qualify) = @_;
+		return $self->to_hash($fully_qualify ? -fully_qualify : undef);
 	}
 
 	package B;

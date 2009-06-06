@@ -41,5 +41,5 @@
 
 # skip object files
 FieldHash\.c$
-\.o(?:bj)$
+\.o(?:bj)?$
 \.bs$

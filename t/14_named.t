@@ -18,11 +18,7 @@ BEGIN{
 	sub new{
 		my $class = shift;
 		my $obj = bless do{ \my $o }, $class;
-		return Hash::FieldHash::from_hash($obj, @_);
-	}
-
-	sub dump{
-		goto &Hash::FieldHash::to_hash;
+		return from_hash($obj, @_);
 	}
 
 	sub registry{
@@ -55,16 +51,16 @@ is_deeply $registry, [{}, {}];
 	is $y->foo, 'y.foo';
 	is $y->bar, 'y.bar';
 
-	is_deeply $x->dump, { foo => 'x.foo', bar => 'x.bar' };
-	is_deeply $y->dump, { foo => 'y.foo', bar => 'y.bar' };
+	is_deeply $x->to_hash, { foo => 'x.foo', bar => 'x.bar' };
+	is_deeply $y->to_hash, { foo => 'y.foo', bar => 'y.bar' };
 }
 
 {
 	my $x = InsideOut->new(foo => 42, bar => 52);
 	my $y = InsideOut->new(foo => 10, bar => 20);
 
-	is_deeply $x->dump, { foo => 42, bar => 52 } or XXX($x->dump);
-	is_deeply $y->dump, { foo => 10, bar => 20 } or XXX($x->dump);
+	is_deeply $x->to_hash, { foo => 42, bar => 52 } or XXX($x->dump);
+	is_deeply $y->to_hash, { foo => 10, bar => 20 } or XXX($x->dump);
 }
 
 

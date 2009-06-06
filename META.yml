@@ -3,12 +3,13 @@ abstract: 'A lightweight field hash implementation'
 author:
   - 'Goro Fuji <gfuji(at)cpan.org>.'
 build_requires:
+  ExtUtils::MakeMaker: 6.42
   Test::LeakTrace: 0.07
   Test::More: 0.62
 configure_requires:
-  ExtUtils::MakeMaker: 6.44
+  ExtUtils::MakeMaker: 6.42
 distribution_type: module
-generated_by: 'Module::Install version 0.79'
+generated_by: 'Module::Install version 0.88'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -16,11 +17,13 @@ meta-spec:
 name: Hash-FieldHash
 no_index:
   directory:
+    - example
     - inc
     - t
+    - xt
 requires:
   Exporter: 5.57
   perl: 5.8.1
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.06
+version: 0.07

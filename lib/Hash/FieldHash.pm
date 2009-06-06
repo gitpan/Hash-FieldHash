@@ -3,10 +3,10 @@ package Hash::FieldHash;
 use 5.008_001;
 use strict;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use Exporter qw(import);
-our @EXPORT_OK   = qw(fieldhash fieldhashes);
+our @EXPORT_OK   = qw(fieldhash fieldhashes from_hash to_hash);
 our %EXPORT_TAGS = (all => \@EXPORT_OK);
 
 use XSLoader;
@@ -29,7 +29,7 @@ Hash::FieldHash - A lightweight field hash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.06.
+This document describes Hash::FieldHash version 0.07.
 
 =head1 SYNOPSIS
 
@@ -48,6 +48,17 @@ This document describes Hash::FieldHash version 0.06.
 	}
 	# when $o is released, $foo{$o} is also deleted,
 	# so %foo is empty in here.
+
+	# in a class
+	{
+		package Foo;
+		use Hash::FieldHash qw(:all);
+
+		fieldhash my %bar, 'bar'; # make an accessor
+	}
+
+	my $obj = bless {}, 'Foo';
+	$obj->bar(10); # does $bar{$obj} = 10
 
 =head1 DESCRIPTION
 
@@ -101,21 +112,49 @@ Creates a number of field hashes. All the arguments must be hash references.
 
 Returns nothing.
 
-=back
-
-=head2 Non-exportable functions
-
-=over 4
-
-=item C<< Hash::FieldHash::from_hash($object, \%fields) >>
+=item C<< from_hash($object, \%fields) >>
 
 Fills the named fields associated with I<$object> with I<%fields>.
+The keys of I<%fields> can be simple or fully qualified.
 
 Returns I<$object>.
 
-=item C<< Hash::FieldHash::to_hash($object) >>
+=item C<< to_hash($object, ?-fully_qualify) >>
 
 Serializes I<$object> into a hash reference.
+
+If the C<-fully_qualify> option is supplied , field keys are fully qualified.
+
+For example:
+
+	package MyClass;
+	use FieldHash qw(:all);
+
+	fieldhash my %foo => 'foo';
+
+	sub new{
+		my $class = shift;
+		my $self  = bless {}, $class;
+		return from_hash($self, @_);
+	}
+
+	package MyDerivedClass;
+	use parent -norequire => 'MyClass';
+	use FieldHash qw(:all);
+
+	fieldhash my %bar => 'bar';
+
+	package main;
+
+	my $o = MyDerivedClass->new(foo => 10, bar => 20);
+	my $p = MyDerivedClass->new('MyClass::foo' => 10, 'MyDerivedClass::bar' => 20);
+
+	use Data::Dumper;
+	print Dumper($o->to_hash()); 
+	# $VAR1 = { foo => 10, bar => 20 }
+
+	print Dumper($o->to_hash(-fully_qualify));
+	# $VAR1 = { 'MyClass::foo' => 10, 'MyDerived::bar' => 20 }
 
 =back
 
