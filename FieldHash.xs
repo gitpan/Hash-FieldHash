@@ -3,6 +3,7 @@
 #include <perl.h>
 #include <XSUB.h>
 
+#define NEED_newSV_type
 #include "ppport.h"
 #include "mgx.h"
 #define NEED_mro_get_linear_isa
