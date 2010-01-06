@@ -16,3 +16,6 @@ __DATA__
 Goro Fuji
 gfuji(at)cpan.org
 Hash::FieldHash
+gfx
+pre
+rw

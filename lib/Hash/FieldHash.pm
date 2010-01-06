@@ -1,11 +1,11 @@
 package Hash::FieldHash;
 
-use 5.008_001;
+use 5.008_005;
 use strict;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
-use Exporter qw(import);
+use parent qw(Exporter);
 our @EXPORT_OK   = qw(fieldhash fieldhashes from_hash to_hash);
 our %EXPORT_TAGS = (all => \@EXPORT_OK);
 
@@ -29,7 +29,7 @@ Hash::FieldHash - A lightweight field hash implementation
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.08.
+This document describes Hash::FieldHash version 0.09.
 
 =head1 SYNOPSIS
 
@@ -218,7 +218,7 @@ Goro Fuji E<lt>gfuji(at)cpan.orgE<gt>.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2009, Goro Fuji. Some rights reserved.
+Copyright (c) 2009-2010, Goro Fuji. Some rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
