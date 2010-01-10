@@ -3,7 +3,7 @@ package Module::Install::XSUtil;
 
 use 5.005_03;
 
-$VERSION = '0.19';
+$VERSION = '0.21';
 
 use Module::Install::Base;
 @ISA     = qw(Module::Install::Base);
@@ -142,8 +142,11 @@ sub cc_warnings{
         $self->cc_append_to_ccflags(qw(-Wall));
 
         no warnings 'numeric';
-        if($Config{gccversion} >= 4.00){
-            $self->cc_append_to_ccflags('-Wextra -Wdeclaration-after-statement -Wc++-compat');
+        if($Config{gccversion} >= 4.0){
+            $self->cc_append_to_ccflags('-Wextra -Wdeclaration-after-statement');
+            if($Config{gccversion} >= 4.1){
+                $self->cc_append_to_ccflags('-Wc++-compat');
+            }
         }
         else{
             $self->cc_append_to_ccflags('-W -Wno-comment');
@@ -526,4 +529,4 @@ sub const_cccmd {
 1;
 __END__
 
-#line 685
+#line 688
