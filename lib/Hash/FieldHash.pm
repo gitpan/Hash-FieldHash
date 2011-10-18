@@ -3,7 +3,7 @@ package Hash::FieldHash;
 use 5.008_005;
 use strict;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use parent qw(Exporter);
 our @EXPORT_OK   = qw(fieldhash fieldhashes from_hash to_hash);
@@ -25,11 +25,11 @@ __END__
 
 =head1 NAME
 
-Hash::FieldHash - A lightweight field hash implementation
+Hash::FieldHash - Lightweight field hash for inside-out objects
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.10.
+This document describes Hash::FieldHash version 0.11.
 
 =head1 SYNOPSIS
 
@@ -66,10 +66,10 @@ C<Hash::FieldHash> provides the field hash mechanism which supports
 the inside-out technique.
 
 You may know C<Hash::Util::FieldHash>. It's a very useful module,
-but too complex to understand all the functions and only available in 5.10.
-C<H::U::F::Compat> is available for pre-5.10, but it seems too slow to use.
+but too complex to understand the functionality and only available in 5.10.
+C<H::U::F::Compat> is available for pre-5.10, but it is too slow to use.
 
-This is an alternative to C<H::U::F> with following features:
+This is a better alternative to C<H::U::F> with following features:
 
 =over 4
 
@@ -150,7 +150,7 @@ For example:
 	my $p = MyDerivedClass->new('MyClass::foo' => 10, 'MyDerivedClass::bar' => 20);
 
 	use Data::Dumper;
-	print Dumper($o->to_hash()); 
+	print Dumper($o->to_hash());
 	# $VAR1 = { foo => 10, bar => 20 }
 
 	print Dumper($o->to_hash(-fully_qualify));
@@ -194,7 +194,7 @@ IDs.
 
 =head1 DEPENDENCIES
 
-Perl 5.8.1 or later, and a C compiler.
+Perl 5.8.5 or later, and a C compiler.
 
 =head1 BUGS
 
@@ -214,11 +214,11 @@ L<Class::Std> describes the inside-out technique.
 
 =head1 AUTHOR
 
-Goro Fuji E<lt>gfuji(at)cpan.orgE<gt>.
+Fuji, Goro (gfx) E<lt>gfuji(at)cpan.orgE<gt>.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2009-2010, Goro Fuji. Some rights reserved.
+Copyright (c) 2009-2010, Fuji, Goro. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

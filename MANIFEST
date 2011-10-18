@@ -1,5 +1,6 @@
 benchmark/create_many.pl
 benchmark/fieldhash.pl
+benchmark/hand-written.pl
 benchmark/mouse.pl
 benchmark/threads.pl
 Changes
@@ -43,9 +44,11 @@ t/13_leaktrace_thr.t
 t/14_named.t
 t/15_named_inherit.t
 t/16_redefine.t
+t/17_overload.t
 t/orig/02_function.t
 t/orig/03_class.t
 t/orig/04_thread.t
+xshelper.h
 xt/01_podspell.t
 xt/02_pod.t
 xt/03_pod-coverage.t

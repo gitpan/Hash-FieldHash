@@ -1,11 +1,13 @@
 use strict;
 use warnings;
 use inc::Module::Install;
-use Module::Install::XSUtil 0.19;
+use Module::Install::XSUtil 0.41;
+use Module::Install::AuthorTests;
+use Module::Install::Repository;
 
 all_from 'lib/Hash/FieldHash.pm';
 
-use_ppport 3.19;
+use_xshelper;
 cc_warnings;
 
 requires 'parent' => 0.221;
