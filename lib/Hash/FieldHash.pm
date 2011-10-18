@@ -3,7 +3,7 @@ package Hash::FieldHash;
 use 5.008_005;
 use strict;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 use parent qw(Exporter);
 our @EXPORT_OK   = qw(fieldhash fieldhashes from_hash to_hash);
@@ -29,7 +29,7 @@ Hash::FieldHash - Lightweight field hash for inside-out objects
 
 =head1 VERSION
 
-This document describes Hash::FieldHash version 0.11.
+This document describes Hash::FieldHash version 0.12.
 
 =head1 SYNOPSIS
 
@@ -191,6 +191,18 @@ restricts the type of keys.
 While C<Hash::Util::FieldHash> uses C<refaddr> as the IDs of field
 hash keys, C<Hash::FieldHash> allocates arbitrary integers as the
 IDs.
+
+=head2 What accessors return
+
+The accessors C<fieldhash()> creates are B<chainable> accessors.
+That is, it returns the I<$object> (i.e. C<$self>) with a parameter,
+where as it returns the I<$value> without it.
+
+For example:
+
+    my $o = YourClass->new();
+    $o->foo(42);           # returns $o itself
+    my $value = $o->foo(); # retuns 42
 
 =head1 DEPENDENCIES
 
