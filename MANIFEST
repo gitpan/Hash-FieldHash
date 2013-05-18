@@ -1,11 +1,8 @@
-.gitignore
 Build.PL
 Changes
 LICENSE
 META.json
 README.md
-_xs_build/src/FieldHash.xs
-_xs_build/src/compat58.xsi
 benchmark/create_many.pl
 benchmark/fieldhash.pl
 benchmark/hand-written.pl
@@ -47,8 +44,5 @@ t/orig/04_thread.t
 xt/02_pod.t
 xt/03_pod-coverage.t
 xt/04_synopsis.t
-Build.PL
-LICENSE
-META.json
 META.yml
 MANIFEST

@@ -13,7 +13,7 @@ configure_requires:
   CPAN::Meta::Prereqs: 0
   Module::Build: 0.38
 dynamic_config: 0
-generated_by: 'Minilla/v0.0.53, CPAN::Meta::Converter version 2.120921'
+generated_by: 'Minilla/v0.4.3, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -31,7 +31,7 @@ no_index:
 provides:
   Hash::FieldHash:
     file: lib/Hash/FieldHash.pm
-    version: 0.13
+    version: 0.14
 requires:
   XSLoader: 0.02
   parent: 0.221
@@ -40,7 +40,7 @@ resources:
   bugtracker: https://github.com/gfx/p5-Hash-FieldHash/issues
   homepage: https://github.com/gfx/p5-Hash-FieldHash
   repository: git://github.com/gfx/p5-Hash-FieldHash.git
-version: 0.13
+version: 0.14
 x_contributors:
   - 'gfx <gfuji@cpan.org>'
   - 'Fuji Goro <fuji.goro@dena.jp>'
